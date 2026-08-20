@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Color4orth — Ink it. Color it. Fork it.</title>
+<meta name="description" content="Color4orth turns comic pages and coloring pages into an open canvas. Inkers upload the artwork, Colorists bring it to life — built on Fork Art.">
+<link rel="icon" href="assets/color4orth-logo-icon.png" type="image/png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bungee&family=Inter:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#26001F;
+    --plum:#4E0044;
+    --plum-light:#6B0F5D;
+    --paper:#FFF6E9;
+    --paper-dim:#EBD9C6;
+    --red:#E4291F;
+    --red-deep:#8C1D14;
+    --orange:#FF7A1A;
+    --yellow:#FFC916;
+    --teal:#2E86AB;
+    --green:#7FB519;
+    --line:#120014;
+    --shadow: 6px 6px 0 var(--line);
+    --torn-edge: polygon(
+      0% 2.5%, 3% 0%, 7% 1.8%, 11% 0.3%, 15% 2%, 19% 0%, 23% 1.6%, 27% 0.2%,
+      31% 2.2%, 35% 0%, 39% 1.4%, 43% 0.4%, 47% 2%, 51% 0%, 55% 1.8%, 59% 0.3%,
+      63% 2%, 67% 0%, 71% 1.5%, 75% 0.2%, 79% 2.2%, 83% 0%, 87% 1.6%, 91% 0.4%,
+      95% 2%, 100% 0%, 100% 100%, 0% 100%
+    );
+    --torn-tag: polygon(
+      0% 15%,4% 0%,10% 20%,16% 2%,22% 18%,28% 0%,34% 15%,40% 3%,
+      46% 20%,52% 0%,58% 16%,64% 2%,70% 18%,76% 0%,82% 15%,88% 3%,94% 20%,100% 0%,
+      100% 100%, 0% 100%
+    );
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0;
+    background:var(--ink);
+    color:var(--paper);
+    font-family:'Inter',sans-serif;
+    -webkit-font-smoothing:antialiased;
+    overflow-x:hidden;
+  }
+  h1,h2,h3,.display{
+    font-family:'Bungee',cursive;
+    line-height:1.05;
+    letter-spacing:0.5px;
+    text-transform:uppercase;
+    margin:0;
+  }
+  .mono{font-family:'Space Mono',monospace;}
+  a{color:inherit;}
+  img,svg{display:block;max-width:100%;}
+  .wrap{max-width:1180px;margin:0 auto;padding:0 28px;}
+  :focus-visible{outline:3px solid var(--yellow);outline-offset:3px;}
+
+  /* ---------- NAV ---------- */
+  header.site{
+    position:sticky;top:0;z-index:50;
+    background:rgba(38,0,31,0.9);
+    backdrop-filter:blur(6px);
+    border-bottom:3px solid var(--line);
+  }
+  .nav{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:14px 28px;max-width:1180px;margin:0 auto;
+  }
+  .brand{display:flex;align-items:center;gap:10px;font-family:'Bungee',cursive;font-size:1.15rem;letter-spacing:0.5px;text-transform:uppercase;}
+  .brand img{height:38px;width:auto;}
+  .nav-links{display:flex;align-items:center;gap:28px;font-size:0.95rem;font-weight:600;}
+  .nav-links a{text-decoration:none;opacity:0.85;transition:opacity .15s;}
+  .nav-links a:hover{opacity:1;}
+  .btn{
+    display:inline-flex;align-items:center;justify-content:center;gap:8px;
+    font-family:'Inter',sans-serif;font-weight:800;font-size:0.95rem;
+    padding:13px 24px;border-radius:3px;border:3px solid var(--line);
+    text-decoration:none;cursor:pointer;
+    box-shadow:var(--shadow);
+    transform:translate(0,0);
+    transition:transform .12s ease, box-shadow .12s ease;
+    white-space:nowrap;
+  }
+  .btn:hover{transform:translate(3px,3px);box-shadow:3px 3px 0 var(--line);}
+  .btn:active{transform:translate(6px,6px);box-shadow:0 0 0 var(--line);}
+  .btn-yellow{background:var(--yellow);color:var(--ink);}
+  .btn-paper{background:var(--paper);color:var(--ink);}
+  .btn-outline{background:transparent;color:var(--paper);}
+  .btn-sm{padding:9px 16px;font-size:0.82rem;box-shadow:4px 4px 0 var(--line);}
+
+  /* ---------- HERO ---------- */
+  .hero{
+    position:relative;
+    background:var(--plum);
+    border-bottom:4px solid var(--line);
+    overflow:hidden;
+    padding:88px 0 100px;
+  }
+  /* dot texture — only on lighter-purple (--plum) sections, never on flat --ink sections */
+  .dotted{position:relative;overflow:hidden;}
+  .dotted::before{
+    content:"";position:absolute;inset:0;
+    background-image:radial-gradient(rgba(255,246,233,0.07) 1.5px, transparent 1.5px);
+    background-size:16px 16px;
+    pointer-events:none;
+  }
+  .dotted .wrap{position:relative;z-index:2;}
+  .hero-grid{
+    display:grid;grid-template-columns:1.05fr 0.95fr;gap:48px;align-items:center;
+  }
+  .eyebrow{
+    display:inline-block;font-family:'Space Mono',monospace;font-size:0.78rem;font-weight:700;
+    letter-spacing:1.5px;text-transform:uppercase;color:var(--yellow);
+    background:rgba(0,0,0,0.25);border:2px solid var(--yellow);
+    padding:6px 12px;border-radius:3px;margin-bottom:22px;
+  }
+  .hero h1{font-size:clamp(2.6rem,5.2vw,4.4rem);color:var(--paper);}
+  .hero h1 .r{color:var(--red);}
+  .hero h1 .o{color:var(--orange);}
+  .hero h1 .y{color:var(--yellow);}
+  .hero h1 .ink{
+    color:var(--paper);
+    -webkit-text-stroke:4px var(--line);
+    text-stroke:4px var(--line);
+    paint-order:stroke fill;
+  }
+  .hero p.lead{
+    font-size:1.18rem;line-height:1.6;color:var(--paper-dim);max-width:48ch;
+    margin:24px 0 34px;
+  }
+  .hero-ctas{display:flex;flex-wrap:wrap;gap:16px;}
+  .hero-art{position:relative;}
+  .hero-art .logo-spin{
+    width:100%;max-width:460px;margin:0 auto;
+    filter:drop-shadow(10px 14px 0 rgba(0,0,0,0.35));
+    transform:rotate(-4deg);
+  }
+  .blob{position:absolute;border-radius:50%;filter:blur(0px);opacity:0.9;z-index:1;}
+
+  /* ---------- DRIP DIVIDER ---------- */
+  .drip{display:block;width:100%;height:64px;margin-top:-2px;}
+
+  /* ---------- SECTION SHELLS ---------- */
+  section{padding:96px 0;position:relative;}
+  .section-ink{background:var(--ink);}
+  .section-plum{background:var(--plum);border-top:4px solid var(--line);border-bottom:4px solid var(--line);}
+  .kicker{
+    font-family:'Space Mono',monospace;font-size:0.8rem;font-weight:700;
+    letter-spacing:2px;text-transform:uppercase;color:var(--teal);
+    margin-bottom:14px;
+  }
+  .section-head{max-width:640px;margin-bottom:56px;}
+  .section-head h2{font-size:clamp(1.9rem,3.4vw,2.7rem);color:var(--paper);}
+  .section-head p{color:var(--paper-dim);font-size:1.06rem;line-height:1.65;margin-top:18px;}
+
+  /* ---------- HOW IT WORKS ---------- */
+  .paths{display:grid;grid-template-columns:1fr 1fr;gap:36px;}
+  .path-card{
+    background:var(--paper);color:var(--ink);
+    border:3px solid var(--line);
+    padding:40px 30px 30px;box-shadow:var(--shadow);
+    clip-path:var(--torn-edge);
+  }
+  .path-card.tilt{transform:rotate(-0.6deg);}
+  .path-card.tilt2{transform:rotate(0.6deg);}
+  .path-tag{
+    display:inline-block;font-family:'Space Mono',monospace;font-weight:700;font-size:0.75rem;
+    letter-spacing:1.5px;text-transform:uppercase;color:var(--paper);
+    padding:7px 14px 9px;margin-bottom:18px;margin-top:4px;
+    clip-path:var(--torn-tag);
+    transform:rotate(-1.5deg);
+  }
+  .tag-colorer{background:var(--teal);}
+  .tag-artist{background:var(--red);}
+  .path-card h3{font-size:1.5rem;margin-bottom:24px;color:var(--ink);}
+  .step{display:flex;gap:18px;margin-bottom:22px;align-items:flex-start;}
+  .step:last-child{margin-bottom:0;}
+  .step-num-wrap{flex:none;width:34px;height:34px;position:relative;}
+  .step-num-wrap svg{position:absolute;inset:-7px;width:48px;height:48px;}
+  .step-num{
+    position:relative;width:34px;height:34px;display:flex;align-items:center;justify-content:center;
+    font-family:'Bungee',cursive;font-size:0.95rem;color:var(--ink);z-index:2;
+  }
+  .step:nth-child(1) .step-blob{transform:rotate(-4deg);}
+  .step:nth-child(2) .step-blob{transform:rotate(6deg);}
+  .step:nth-child(3) .step-blob{transform:rotate(-7deg);}
+  .step-body h4{margin:0 0 4px;font-size:1rem;font-weight:800;font-family:'Inter',sans-serif;text-transform:none;letter-spacing:0;}
+  .step-body p{margin:0;font-size:0.94rem;line-height:1.55;color:#3a1230;}
+
+  /* ---------- LINEAGE / REMIX ---------- */
+  .lineage-wrap{display:grid;grid-template-columns:0.85fr 1.15fr;gap:56px;align-items:center;}
+  .lineage-copy p{color:var(--paper-dim);font-size:1.04rem;line-height:1.65;margin-bottom:18px;}
+  .lineage-copy ul{margin:24px 0 0;padding:0;list-style:none;}
+  .lineage-copy li{
+    display:flex;gap:12px;margin-bottom:14px;font-size:0.98rem;color:var(--paper);
+  }
+  .lineage-copy li::before{
+    content:"";flex:none;width:10px;height:10px;margin-top:6px;
+    background:var(--orange);border-radius:2px;transform:rotate(45deg);
+  }
+  .tree{width:100%;}
+  .tree-node{cursor:default;}
+  .tree-node rect, .tree-node circle{transition:transform .15s ease;transform-origin:center;transform-box:fill-box;}
+  .tree-node:hover rect, .tree-node:hover circle{transform:scale(1.08);}
+  .tree text{font-family:'Space Mono',monospace;font-size:11px;fill:var(--paper);}
+
+  /* ---------- PAYOUT ---------- */
+  .payout-wrap{display:grid;grid-template-columns:1fr 1fr;gap:56px;align-items:center;}
+  .split-card{
+    background:var(--paper);color:var(--ink);border:3px solid var(--line);
+    box-shadow:var(--shadow);padding:40px 36px 36px;
+    clip-path:var(--torn-edge);
+  }
+  .tier-list{display:flex;flex-direction:column;gap:16px;margin:22px 0 18px;}
+  .tier-label-row{
+    display:flex;justify-content:space-between;align-items:baseline;
+    font-family:'Space Mono',monospace;font-size:0.78rem;margin-bottom:6px;
+  }
+  .tier-name{font-weight:700;letter-spacing:0.5px;text-transform:uppercase;}
+  .tier-badge{
+    font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;
+    color:#3d7a12;background:rgba(127,181,25,0.15);padding:2px 9px 3px;
+    border-radius:3px 9px 4px 8px;
+    transform:rotate(-1deg);display:inline-block;
+  }
+  .tier-bar{display:flex;height:40px;border:3px solid var(--line);border-radius:3px;overflow:hidden;}
+  .tier-seg{display:flex;align-items:center;justify-content:center;font-family:'Space Mono',monospace;font-weight:700;font-size:0.82rem;}
+  .tier-seg.platform{background:var(--paper-dim);color:var(--ink);}
+  .tier-1 .tier-seg.inker{background:var(--yellow);color:var(--ink);}
+  .tier-2 .tier-seg.inker{background:var(--orange);color:var(--ink);}
+  .tier-3 .tier-seg.inker{background:var(--green);color:var(--ink);}
+  .tier-3 .tier-label-row .tier-name{color:#5a2a4c;}
+  .split-legend{display:flex;justify-content:space-between;font-size:0.82rem;font-family:'Space Mono',monospace;color:#5a2a4c;}
+  .note{
+    margin-top:34px;padding:16px 18px;background:var(--paper-dim);
+    border:2px solid var(--line);border-radius:3px;
+    box-shadow:4px 4px 0 var(--line);
+    transform:rotate(-0.4deg);
+    font-size:0.92rem;line-height:1.55;color:#2b1a26;
+  }
+  .payout-copy p{color:var(--paper-dim);font-size:1.04rem;line-height:1.65;margin-bottom:18px;}
+
+  /* ---------- FOUNDING ARTIST CTA ---------- */
+  .cta-band{
+    background:var(--red-deep);border-top:4px solid var(--line);border-bottom:4px solid var(--line);
+    padding:80px 0;text-align:center;position:relative;overflow:hidden;
+  }
+  .cta-band::before{
+    content:"";position:absolute;inset:0;
+    background-image:radial-gradient(rgba(0,0,0,0.16) 1.6px, transparent 1.6px);
+    background-size:13px 13px;
+    pointer-events:none;
+  }
+  .cta-splash{position:absolute;z-index:1;pointer-events:none;}
+  .cta-band .wrap{position:relative;z-index:2;}
+  .cta-band h2{color:var(--paper);font-size:clamp(1.8rem,3.6vw,2.6rem);max-width:720px;margin:0 auto 18px;}
+  .cta-band p{color:rgba(255,246,233,0.88);font-size:1.05rem;max-width:520px;margin:0 auto 36px;line-height:1.6;}
+  .cta-band .btn-paper{background:var(--paper);}
+
+  /* ---------- FOOTER ---------- */
+  footer{background:var(--ink);padding:52px 0 36px;}
+  .footer-grid{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:32px;}
+  .footer-brand{display:flex;align-items:center;gap:10px;}
+  .footer-brand img{height:30px;}
+  .footer-brand span{font-family:'Bungee',cursive;font-size:1rem;text-transform:uppercase;}
+  .footer-links{display:flex;gap:26px;flex-wrap:wrap;font-size:0.9rem;}
+  .footer-links a{text-decoration:none;color:var(--paper-dim);}
+  .footer-links a:hover{color:var(--paper);}
+  .footer-bottom{
+    margin-top:36px;padding-top:24px;border-top:1px solid rgba(255,246,233,0.15);
+    display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px;
+    font-size:0.82rem;color:var(--paper-dim);font-family:'Space Mono',monospace;
+  }
+
+  @media (max-width:880px){
+    .hero-grid{grid-template-columns:1fr;}
+    .hero-art{order:-1;max-width:320px;margin:0 auto 20px;}
+    .paths{grid-template-columns:1fr;}
+    .lineage-wrap{grid-template-columns:1fr;}
+    .payout-wrap{grid-template-columns:1fr;}
+    .nav-links{display:none;}
+    section{padding:64px 0;}
+    .cta-splash{transform:scale(0.4);}
+    .cta-splash:nth-of-type(1){top:-95px;left:-95px;}
+    .cta-splash:nth-of-type(2){bottom:-120px;right:-110px;}
+    .cta-splash:nth-of-type(3){display:none;}
+  }
+  @media (prefers-reduced-motion:reduce){
+    html{scroll-behavior:auto;}
+    .btn, .tree-node rect, .tree-node circle{transition:none;}
+  }
+</style>
+</head>
+<body>
+
+<header class="site">
+  <div class="nav">
+    <div class="brand">
+      <img src="color4orth-logo-icon.png" alt="">
+      Color4orth
+    </div>
+    <nav class="nav-links">
+      <a href="#how">How it works</a>
+      <a href="#remix">Remix</a>
+      <a href="#payout">For Inkers</a>
+    </nav>
+    <a class="btn btn-yellow btn-sm" href="https://forkart.app">Get Fork Art</a>
+  </div>
+</header>
+
+<section class="hero dotted">
+  <div class="wrap hero-grid">
+    <div>
+      <span class="eyebrow">A Fork Art feature</span>
+      <h1><span class="ink">Ink it.</span><br><span class="y">Color it.</span><br><span class="r">Fork</span> it.</h1>
+      <p class="lead">Color4orth turns comic pages and coloring pages into an open canvas. Inkers upload the artwork, Colorists bring it to life, and every finished page forks into something new — with Inkers earning a share when their pages get colored.</p>
+      <div class="hero-ctas">
+        <a class="btn btn-yellow" href="https://forkart.app">Get Fork Art</a>
+        <a class="btn btn-outline" href="#payout">I'm an Inker</a>
+      </div>
+    </div>
+    <div class="hero-art">
+      <img class="logo-spin" src="color4orth-logo-hero.png" alt="Color4orth logo — paint splash with halftone dots">
+    </div>
+  </div>
+</section>
+
+<svg class="drip" viewBox="0 0 1200 60" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+  <path d="M0,0 L1200,0 L1200,18 Q1140,50 1080,20 Q1020,-6 960,24 Q900,54 840,16 Q780,-10 720,22 Q660,52 600,18 Q540,-8 480,24 Q420,54 360,20 Q300,-6 240,22 Q180,50 120,18 Q60,-8 0,20 Z" fill="#26001F"/>
+</svg>
+
+<section class="section-ink" id="how">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="kicker">How it works</div>
+      <h2>Two ways in</h2>
+      <p>Color4orth only works because two different people show up: the Inker who draws the page, and the Colorist who brings it to life. Here's what each side actually does.</p>
+    </div>
+    <div class="paths">
+      <div class="path-card tilt">
+        <span class="path-tag tag-colorer">Colorists</span>
+        <h3>Bring it to life</h3>
+        <div class="step">
+          <div class="step-num-wrap">
+            <svg class="step-blob" viewBox="0 0 48 48"><path fill="#FFC916" stroke="#120014" stroke-width="3" d="M24 3c7 0 9 4 13 6 4 2 8 5 8 11 0 6-3 8-5 12-2 4-4 9-11 10-7 1-11-2-15-4-4-2-9-4-10-11-1-7 2-10 4-14 2-4 5-10 16-10z"/></svg>
+            <div class="step-num">1</div>
+          </div>
+          <div class="step-body">
+            <h4>Pick a page</h4>
+            <p>Browse comic pages and coloring pages uploaded by Inkers on Fork Art — anything from a quick sketch to a full comic panel.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num-wrap">
+            <svg class="step-blob" viewBox="0 0 48 48"><path fill="#FFC916" stroke="#120014" stroke-width="3" d="M23 4c6-1 10 2 14 5 4 3 9 4 10 10 1 6-2 9-4 13-2 4-3 10-10 12-7 2-11-1-16-3-5-2-10-3-12-10-2-7 1-11 3-15 2-4 6-11 15-12z"/></svg>
+            <div class="step-num">2</div>
+          </div>
+          <div class="step-body">
+            <h4>Paint it</h4>
+            <p>Real brushes, not tap-to-fill zones. Full color. No boundaries. The line art stays put.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num-wrap">
+            <svg class="step-blob" viewBox="0 0 48 48"><path fill="#FFC916" stroke="#120014" stroke-width="3" d="M25 3c7 0 8 5 12 7 4 2 9 3 10 9 1 6-3 9-5 13-2 4-3 10-11 11-8 1-11-3-15-5-4-2-9-3-10-10-1-7 3-10 5-14 2-4 6-11 14-11z"/></svg>
+            <div class="step-num">3</div>
+          </div>
+          <div class="step-body">
+            <h4>Post it, fork it</h4>
+            <p>Share your version, or let someone else fork it and take it somewhere new.</p>
+          </div>
+        </div>
+      </div>
+      <div class="path-card tilt2">
+        <span class="path-tag tag-artist">Inkers</span>
+        <h3>Get paid to ink pages</h3>
+        <div class="step">
+          <div class="step-num-wrap">
+            <svg class="step-blob" viewBox="0 0 48 48"><path fill="#FFC916" stroke="#120014" stroke-width="3" d="M24 3c7 0 9 4 13 6 4 2 8 5 8 11 0 6-3 8-5 12-2 4-4 9-11 10-7 1-11-2-15-4-4-2-9-4-10-11-1-7 2-10 4-14 2-4 5-10 16-10z"/></svg>
+            <div class="step-num">1</div>
+          </div>
+          <div class="step-body">
+            <h4>Upload your page</h4>
+            <p>Any black-and-white comic page or coloring page with a transparent background — Color4orth handles the rest.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num-wrap">
+            <svg class="step-blob" viewBox="0 0 48 48"><path fill="#FFC916" stroke="#120014" stroke-width="3" d="M23 4c6-1 10 2 14 5 4 3 9 4 10 10 1 6-2 9-4 13-2 4-3 10-10 12-7 2-11-1-16-3-5-2-10-3-12-10-2-7 1-11 3-15 2-4 6-11 15-12z"/></svg>
+            <div class="step-num">2</div>
+          </div>
+          <div class="step-body">
+            <h4>People color it</h4>
+            <p>Every finished, posted page becomes part of your lineage on Fork Art — visible, forkable, yours.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num-wrap">
+            <svg class="step-blob" viewBox="0 0 48 48"><path fill="#FFC916" stroke="#120014" stroke-width="3" d="M25 3c7 0 8 5 12 7 4 2 9 3 10 9 1 6-3 9-5 13-2 4-3 10-11 11-8 1-11-3-15-5-4-2-9-3-10-10-1-7 3-10 5-14 2-4 6-11 14-11z"/></svg>
+            <div class="step-num">3</div>
+          </div>
+          <div class="step-body">
+            <h4>Earn your share</h4>
+            <p>Every colored page adds to your lineage on Fork Art, and every subscriber who colors it is a chance to earn.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<svg class="drip" viewBox="0 0 1200 60" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg" style="transform:rotate(180deg);">
+  <path d="M0,0 L1200,0 L1200,18 Q1140,50 1080,20 Q1020,-6 960,24 Q900,54 840,16 Q780,-10 720,22 Q660,52 600,18 Q540,-8 480,24 Q420,54 360,20 Q300,-6 240,22 Q180,50 120,18 Q60,-8 0,20 Z" fill="#4E0044"/>
+</svg>
+
+<section class="section-plum dotted" id="remix">
+  <div class="wrap lineage-wrap">
+    <div class="lineage-copy">
+      <div class="kicker" style="color:var(--yellow);">Built on Fork Art</div>
+      <h2 style="color:var(--paper);font-size:clamp(1.9rem,3.4vw,2.7rem);margin-bottom:18px;">Coloring is just the start of the chain</h2>
+      <p>Every page on Color4orth lives on Fork Art's lineage graph. A black-and-white original can be colored a dozen different ways, and each one of those can be forked again — remixed, recolored, taken somewhere the original Inker never expected.</p>
+      <ul>
+        <li>Every fork keeps a visible line back to the original Inker</li>
+        <li>Nothing gets buried — the whole tree is browsable, from root to newest leaf</li>
+        <li>Popular pages naturally attract more forks, and more forks mean more chances for the original Inker to earn</li>
+      </ul>
+    </div>
+    <div>
+      <svg class="tree" viewBox="0 0 420 300" xmlns="http://www.w3.org/2000/svg">
+        <path d="M70,150 C120,150 120,60 170,60" stroke="#FFC916" stroke-width="3" fill="none"/>
+        <path d="M70,150 C120,150 120,150 175,150" stroke="#FF7A1A" stroke-width="3" fill="none"/>
+        <path d="M70,150 C120,150 120,240 170,240" stroke="#2E86AB" stroke-width="3" fill="none"/>
+        <path d="M180,60 C220,60 220,30 255,30" stroke="#FFC916" stroke-width="2.5" fill="none" opacity="0.85"/>
+        <path d="M180,60 C220,60 220,90 255,90" stroke="#FFC916" stroke-width="2.5" fill="none" opacity="0.85"/>
+        <path d="M180,240 C220,240 220,270 255,270" stroke="#2E86AB" stroke-width="2.5" fill="none" opacity="0.85"/>
+        <path d="M265,30 C300,30 300,10 335,10" stroke="#E4291F" stroke-width="2" fill="none" opacity="0.7"/>
+        <g class="tree-node">
+          <circle cx="55" cy="150" r="17" fill="#26001F" stroke="#FFF6E9" stroke-width="3"/>
+          <text x="55" y="180" text-anchor="middle">original</text>
+        </g>
+        <g class="tree-node"><rect x="163" y="50" width="20" height="20" rx="3" fill="#FFC916" stroke="#120014" stroke-width="2.5"/></g>
+        <g class="tree-node"><rect x="168" y="140" width="20" height="20" rx="3" fill="#FF7A1A" stroke="#120014" stroke-width="2.5"/></g>
+        <g class="tree-node"><rect x="163" y="230" width="20" height="20" rx="3" fill="#2E86AB" stroke="#120014" stroke-width="2.5"/></g>
+        <g class="tree-node"><rect x="248" y="20" width="16" height="16" rx="3" fill="#FFC916" stroke="#120014" stroke-width="2" opacity="0.9"/></g>
+        <g class="tree-node"><rect x="248" y="80" width="16" height="16" rx="3" fill="#FFC916" stroke="#120014" stroke-width="2" opacity="0.9"/></g>
+        <g class="tree-node"><rect x="248" y="260" width="16" height="16" rx="3" fill="#2E86AB" stroke="#120014" stroke-width="2" opacity="0.9"/></g>
+        <g class="tree-node"><rect x="330" y="1" width="13" height="13" rx="2" fill="#E4291F" stroke="#120014" stroke-width="2" opacity="0.75"/></g>
+        <text x="55" y="120" text-anchor="middle" fill="#FFF6E9" font-family="Space Mono" font-size="10" opacity="0.7">inked page</text>
+      </svg>
+      <p class="mono" style="font-size:0.8rem;color:var(--paper-dim);text-align:center;margin-top:10px;">one original → three colorists → five forks, and counting</p>
+    </div>
+  </div>
+</section>
+
+<section class="section-ink" id="payout">
+  <div class="wrap payout-wrap">
+    <div class="split-card">
+      <div class="kicker" style="color:var(--red);">Where the money goes</div>
+      <h3 style="font-size:1.4rem;text-transform:none;font-family:'Inter',sans-serif;font-weight:800;">Founding Inker rates</h3>
+      <div class="tier-list">
+        <div class="tier-1">
+          <div class="tier-label-row">
+            <span class="tier-name">Inkers #1–10</span>
+            <span class="tier-badge">Locked in forever</span>
+          </div>
+          <div class="tier-bar">
+            <div class="tier-seg inker" style="flex:95;">95%</div>
+            <div class="tier-seg platform" style="flex:5;"></div>
+          </div>
+        </div>
+        <div class="tier-2">
+          <div class="tier-label-row">
+            <span class="tier-name">Inkers #11–100</span>
+            <span class="tier-badge">Locked in forever</span>
+          </div>
+          <div class="tier-bar">
+            <div class="tier-seg inker" style="flex:80;">80%</div>
+            <div class="tier-seg platform" style="flex:20;">20%</div>
+          </div>
+        </div>
+        <div class="tier-3">
+          <div class="tier-label-row">
+            <span class="tier-name">Inker #101 on</span>
+          </div>
+          <div class="tier-bar">
+            <div class="tier-seg inker" style="flex:70;">70%</div>
+            <div class="tier-seg platform" style="flex:30;">30%</div>
+          </div>
+        </div>
+      </div>
+      <div class="note">This isn't one big platform-wide pot. Each subscriber's payment is split only among the Inkers <em>they personally color</em> that month — color exclusively for one subscriber, and their whole share is yours. A small, devoted following pays off directly; you're never competing with the entire platform for your cut, just with whoever else that one subscriber happens to color.</div>
+    </div>
+    <div class="payout-copy">
+      <div class="kicker">For Inkers</div>
+      <h2 style="color:var(--paper);font-size:clamp(1.9rem,3.4vw,2.7rem);margin-bottom:18px;">Get paid when your work gets colored</h2>
+      <p>Post a page, and every Colorist who picks it up is a chance to earn. The more your pages get colored, the more you make.</p>
+      <p>The first 10 Inkers to join are locked at 95% — for good. The next 90 are locked at 80% — also for good. After that, it's 70/30, same as everyone. Early just means early — there's no catch, and no step-down later.</p>
+      <a class="btn btn-yellow" href="mailto:forkartapp@gmail.com?subject=Color4orth%20—%20Founding%20Inker" style="margin-top:8px;">Become a founding Inker</a>
+    </div>
+  </div>
+</section>
+
+<section class="cta-band">
+  <svg class="cta-splash" viewBox="0 0 200 200" style="top:-50px;left:-40px;width:220px;height:220px;opacity:0.92;">
+    <path fill="#FFC916" stroke="#120014" stroke-width="4" d="M100 20c22-4 34 10 48 20 14 10 30 18 32 40 2 22-12 32-22 46-10 14-16 36-42 40-26 4-40-10-56-18-16-8-34-14-38-38-4-24 8-38 18-52 10-14 24-34 60-38z"/>
+    <path fill="#FF7A1A" stroke="#120014" stroke-width="3" d="M60 130c8 6 6 18-2 22-8 4-18-2-20-12-2-10 4-18 12-18 4 0 7 4 10 8z"/>
+  </svg>
+  <svg class="cta-splash" viewBox="0 0 220 220" style="bottom:-60px;right:-50px;width:250px;height:250px;opacity:0.92;">
+    <path fill="#2E86AB" stroke="#120014" stroke-width="4" d="M110 15c24 0 36 16 50 26 14 10 32 16 36 42 4 26-10 38-20 54-10 16-14 40-42 46-28 6-44-10-60-20-16-10-36-16-40-44-4-28 10-42 20-58 10-16 22-46 56-46z"/>
+    <path fill="#FFC916" stroke="#120014" stroke-width="3" d="M40 60c10 4 10 18 0 24-10 6-22-2-22-14 0-10 8-16 16-14 2 0 4 2 6 4z"/>
+  </svg>
+  <svg class="cta-splash" viewBox="0 0 140 140" style="top:20px;right:6%;width:90px;height:90px;opacity:0.85;">
+    <path fill="#7FB519" stroke="#120014" stroke-width="4" d="M70 12c16 0 24 12 32 20 8 8 18 14 18 28 0 14-10 20-16 30-6 10-10 24-26 26-16 2-24-8-34-14-10-6-20-10-22-26-2-16 6-24 12-34 6-10 14-30 36-30z"/>
+  </svg>
+  <div class="wrap">
+    <h2>Grab a page. Pick up a color. See where it goes.</h2>
+    <p>Color4orth lives inside the Fork Art app — free to download, free to color.</p>
+    <a class="btn btn-paper" href="https://forkart.app">Get Fork Art →</a>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <img src="color4orth-logo-icon.png" alt="">
+        <span>Color4orth</span>
+      </div>
+      <div class="footer-links">
+        <a href="https://forkart.app">Fork Art</a>
+        <a href="#how">How it works</a>
+        <a href="#remix">Remix</a>
+        <a href="#payout">For Inkers</a>
+        <a href="mailto:forkartapp@gmail.com?subject=Color4orth%20—%20Question">Contact</a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2026 Noble Earth Studio</span>
+      <span>Color4orth is a feature of Fork Art</span>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>
